@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: tripwise-ai
+    runtime: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GROQ_API_KEY
+        sync: false   # You will enter this manually in Render dashboard
