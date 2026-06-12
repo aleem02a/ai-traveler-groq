@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="TripWise is an AI-powered student travel planner for India with smart budgets, voice input, live maps, saved plans, PDF export, calendar export, and QR sharing.">
+  <meta name="theme-color" content="#c9a84c">
+  <meta name="application-name" content="TripWise">
+  <meta name="author" content="TripWise">
+  <meta name="robots" content="index, follow">
+  <meta name="color-scheme" content="dark light">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TripWise — AI Student Travel Planner">
+  <meta property="og:description" content="Build student-friendly India itineraries with AI budgets, maps, voice input, saved plans, and QR sharing.">
+  <meta property="og:site_name" content="TripWise">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="TripWise — AI Student Travel Planner">
+  <meta name="twitter:description" content="AI-powered student travel planning for India.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a0f1e'/%3E%3Cpath d='M38 8 14 36h16l-4 20 24-30H34z' fill='%23c9a84c'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230a0f1e'/%3E%3Cpath d='M38 8 14 36h16l-4 20 24-30H34z' fill='%23c9a84c'/%3E%3C/svg%3E">
+  <title>TripWise — AI Student Travel Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ═══════════ BACKGROUND ORBS ═══════════ -->
+<div class="orb orb-a"></div>
+<div class="orb orb-b"></div>
+<div class="orb orb-c"></div>
+
+<!-- ═══════════ SCREEN 1 · INTRO ═══════════ -->
+<div class="screen active" id="introScreen">
+  <button class="theme-fab" id="introThemeBtn" title="Toggle theme"><span class="theme-icon">🌙</span></button>
+  <div class="intro-inner">
+    <div class="ai-badge">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Groq · Llama 3 · AI-Powered
+    </div>
+    <h1 class="intro-logo">TripWise</h1>
+    <p class="intro-tagline">Intelligent travel planning crafted for Indian students.<br>Refined routes. Precise budgets. Effortless journeys.</p>
+    <button class="cta-btn" id="introCta">
+      Begin Planning
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <div class="intro-chips">
+      <span>⚡ Ultra-Fast AI</span><span>🎤 Voice Input</span><span>🗺 Live Maps</span>
+      <span>💾 Save Plans</span><span>📄 PDF Export</span><span>📅 Calendar</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN 2 · APP ═══════════ -->
+<div class="screen" id="appShell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="mobile-form-toggle" id="mobileFormToggle" title="Open trip form">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="topbar-brand" id="installAppLogo" title="Install TripWise App" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+        <span class="brand-star">✦</span>
+        <span class="brand-copy">
+          <span class="brand-name">TripWise</span>
+          <span class="brand-kicker">AI-Powered Student Travel Planner</span>
+        </span>
+        <span class="brand-tag">Groq AI</span>
+      </div>
+      <div class="powered-badge" title="Powered by Groq Cloud & Llama 3">
+        <span class="pw-dot"></span>
+        <span>Powered by <strong>Groq</strong> · Llama 3</span>
+      </div>
+    </div>
+    <div class="topbar-status" id="planStatus">Ready — plan, save, and share</div>
+    <nav class="topbar-nav" aria-label="Primary navigation">
+      <a class="topbar-link" href="#workspace">Planner</a>
+      <a class="topbar-link" href="#features">AI Tools</a>
+      <a class="topbar-link" href="#saved-plans" id="savedPlansNav">Saved Plans</a>
+      <a class="topbar-link" href="#tab-safety" id="safetyNav">Safety</a>
+      <a class="topbar-link" href="#contact">Contact</a>
+    </nav>
+    <div class="topbar-right">
+      <button class="tb-btn theme-toggle-btn" id="themeToggleBtn" title="Toggle theme"><span class="theme-icon">🌙</span></button>
+      <button class="tb-btn" id="savedPlansBtn">📂 Plans</button>
+      <button class="tb-btn hide-sm" id="printBtn">🖨 Print</button>
+      <button class="tb-btn hide-sm" id="shareBtn">🔗 Share</button>
+    </div>
+  </header>
+
+  <div class="workspace" id="workspace">
+    <div class="form-overlay" id="formOverlay"></div>
+
+    <!-- FORM PANEL -->
+    <aside class="form-panel" id="formPanel">
+      <div class="form-panel-hd">
+        <div><div class="panel-label">⚡ Groq + Llama 3</div><h2 class="panel-title">Plan your trip</h2></div>
+        <button class="form-close-btn" id="formCloseBtn" title="Close">✕</button>
+      </div>
+
+      <!-- NLP BAR -->
+      <div class="nlp-bar">
+        <div class="nlp-bar-label">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Describe your trip in plain English
+        </div>
+        <div class="nlp-input-wrap">
+          <textarea class="nlp-textarea" id="nlpInput" rows="2"
+            placeholder="e.g. 3 days in Goa under ₹8000 for 4 friends, love beaches and food, chill pace…"></textarea>
+          <button class="voice-btn" id="voiceBtn" title="Voice input (Chrome/Edge)">🎤</button>
+        </div>
+        <button class="btn-primary sm full" id="nlpFillBtn">✨ Auto-Fill Form with AI</button>
+      </div>
+
+      <form id="planForm" novalidate autocomplete="off">
+        <div class="field">
+          <label class="fl" for="fCity">Destination</label>
+          <select class="fi" id="fCity">
+            <optgroup label="🏔 North India">
+              <option value="Delhi">🏛 Delhi</option>
+              <option value="Agra">🕍 Agra</option>
+              <option value="Amritsar">🌟 Amritsar</option>
+              <option value="Chandigarh">🌿 Chandigarh</option>
+              <option value="Dharamsala">⛰ Dharamsala</option>
+              <option value="Haridwar">🪔 Haridwar</option>
+              <option value="Jaipur">🏰 Jaipur</option>
+              <option value="Jodhpur">🏯 Jodhpur</option>
+              <option value="Leh Ladakh">🏔 Leh / Ladakh</option>
+              <option value="Lucknow">🎭 Lucknow</option>
+              <option value="Manali">❄ Manali</option>
+              <option value="Mathura">🕌 Mathura</option>
+              <option value="Pushkar">🐪 Pushkar</option>
+              <option value="Rishikesh">⛰ Rishikesh</option>
+              <option value="Shimla">🏔 Shimla</option>
+              <option value="Udaipur">⛵ Udaipur</option>
+              <option value="Varanasi">🪔 Varanasi</option>
+              <option value="Dehradun">🌲 Dehradun</option>
+            </optgroup>
+            <optgroup label="🌊 West India">
+              <option value="Mumbai">🌊 Mumbai</option>
+              <option value="Pune">🎓 Pune</option>
+              <option value="Goa">🏖 Goa</option>
+              <option value="Ahmedabad">🏗 Ahmedabad</option>
+              <option value="Surat">💎 Surat</option>
+              <option value="Vadodara">🎨 Vadodara</option>
+              <option value="Aurangabad">🕌 Aurangabad</option>
+              <option value="Nashik">🍇 Nashik</option>
+            </optgroup>
+            <optgroup label="🌴 South India">
+              <option value="Bengaluru">🌿 Bengaluru</option>
+              <option value="Chennai">🏖 Chennai</option>
+              <option value="Hyderabad">🕌 Hyderabad</option>
+              <option value="Kochi">⛵ Kochi</option>
+              <option value="Madurai">🏛 Madurai</option>
+              <option value="Mysuru">🏰 Mysuru</option>
+              <option value="Ooty">🍃 Ooty</option>
+              <option value="Hampi">🏛 Hampi</option>
+              <option value="Thiruvananthapuram">🌺 Thiruvananthapuram</option>
+              <option value="Coimbatore">🏭 Coimbatore</option>
+              <option value="Pondicherry">🇫🇷 Pondicherry</option>
+              <option value="Munnar">🍵 Munnar</option>
+            </optgroup>
+            <optgroup label="🌿 East India">
+              <option value="Kolkata">🎭 Kolkata</option>
+              <option value="Darjeeling">☕ Darjeeling</option>
+              <option value="Gangtok">🏔 Gangtok</option>
+              <option value="Puri">🌊 Puri</option>
+              <option value="Bhubaneswar">🛕 Bhubaneswar</option>
+              <option value="Guwahati">🐘 Guwahati</option>
+              <option value="Shillong">⛰ Shillong</option>
+              <option value="Patna">🏛 Patna</option>
+            </optgroup>
+            <optgroup label="🌾 Central India">
+              <option value="Bhopal">🏛 Bhopal</option>
+              <option value="Indore">🍜 Indore</option>
+              <option value="Khajuraho">🏛 Khajuraho</option>
+              <option value="Jabalpur">🌊 Jabalpur</option>
+              <option value="Nagpur">🍊 Nagpur</option>
+              <option value="Ujjain">🛕 Ujjain</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label class="fl" for="fDate">Start Date</label><input class="fi" type="date" id="fDate"></div>
+          <div class="field"><label class="fl" for="fDays">Days (1–7)</label><input class="fi" type="number" id="fDays" min="1" max="7" value="3"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label class="fl" for="fPeople">Students</label><input class="fi" type="number" id="fPeople" min="1" max="20" value="2"></div>
+          <div class="field"><label class="fl" for="fBudget">Budget (₹)</label><input class="fi" type="number" id="fBudget" min="500" step="500" value="12000"></div>
+        </div>
+        <div class="field">
+          <div class="fl">Interests</div>
+          <div class="chip-row">
+            <label class="chip"><input type="checkbox" name="int" value="culture" checked><span>🏛 Culture</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="food" checked><span>🍜 Food</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="nature"><span>🌿 Nature</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="markets"><span>🛍 Markets</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="nightlife"><span>🌙 Night</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="education"><span>📚 Study</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="adventure"><span>⛰ Adventure</span></label>
+            <label class="chip"><input type="checkbox" name="int" value="photography"><span>📸 Photos</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <div class="fl">Trip Pace</div>
+          <div class="seg">
+            <label class="seg-opt"><input type="radio" name="pace" value="relaxed"><span>😌 Relaxed</span></label>
+            <label class="seg-opt"><input type="radio" name="pace" value="balanced" checked><span>⚖ Balanced</span></label>
+            <label class="seg-opt"><input type="radio" name="pace" value="packed"><span>⚡ Packed</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label class="fl" for="fTransport">Transport</label>
+          <select class="fi" id="fTransport">
+            <option value="Metro and Bus">🚇 Metro &amp; Bus</option>
+            <option value="Walk and Transit">🚶 Walk + Transit</option>
+            <option value="Rental Scooter">🛵 Rental Scooter</option>
+            <option value="Shared Cabs">🚗 Shared Cabs (Ola/Uber)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="fl" for="fStay">Stay Type</label>
+          <select class="fi" id="fStay">
+            <option value="Student hostel">🏠 Student Hostel</option>
+            <option value="Budget hotel">🏨 Budget Hotel</option>
+            <option value="Friends or campus stay">👥 Friends / Campus Stay</option>
+            <option value="Airbnb or PG accommodation">🏡 Airbnb / PG</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="fl" for="fMeal">Meal Style</label>
+          <select class="fi" id="fMeal">
+            <option value="street food stalls">🌮 Street Food</option>
+            <option value="mix of street food and cafes">🍽 Street + Cafes</option>
+            <option value="sit-down restaurants">🍛 Restaurants</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="fl" for="fExtra">Special Requests</label>
+          <textarea class="fi" id="fExtra" rows="2" placeholder="e.g. vegetarian only, avoid temples, hidden gems…"></textarea>
+        </div>
+        <div class="form-btns">
+          <button class="btn-primary" type="submit" id="generateBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Generate AI Plan
+          </button>
+          <button class="btn-ghost sm" id="sampleBtn" type="button">🎲 Sample</button>
+        </div>
+      </form>
+    </aside>
+
+    <!-- RESULTS PANEL -->
+    <main class="results-panel">
+      <div class="results-hd">
+        <div class="results-hd-text">
+          <div class="results-label" id="tripLabel">Configure your trip → Generate AI Plan</div>
+          <h2 class="results-title" id="tripTitle">Your AI itinerary will appear here</h2>
+        </div>
+        <div class="ai-pill">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Llama 3 · Groq
+        </div>
+      </div>
+
+      <!-- AI ACTIONS BAR -->
+      <span class="section-anchor" id="features" aria-hidden="true"></span>
+      <div class="ai-actions-bar" id="aiActionsBar">
+        <button class="aia-btn" id="summaryBtn" title="AI WhatsApp summary">📝 Summarize</button>
+        <button class="aia-btn" id="negotiateBtn" title="AI budget advice">💸 Budget AI</button>
+        <button class="aia-btn" id="compareBtn" title="Compare 3 plan variants">⚖ Compare</button>
+        <button class="aia-btn" id="saveBtn" title="Save to browser">💾 Save</button>
+        <button class="aia-btn" id="calendarBtn" title="Export to .ics calendar">📅 Calendar</button>
+        <button class="aia-btn" id="pdfBtn" title="Export as PDF">📄 PDF</button>
+        <button class="aia-btn" id="qrBtn" title="Generate QR code">⬛ QR Code</button>
+        <button class="aia-btn" id="waBtn" title="Share on WhatsApp">💬 WhatsApp</button>
+        <button class="aia-btn" id="exportShareBtn" title="Share plan">🔗 Share</button>
+      </div>
+
+      <!-- STATS -->
+      <div class="stat-grid" id="statGrid">
+        <div class="stat-card ph"><div class="si">💰</div><div class="sv">—</div><div class="sl">Per Student</div></div>
+        <div class="stat-card ph"><div class="si">📍</div><div class="sv">—</div><div class="sl">AI Stops</div></div>
+        <div class="stat-card ph"><div class="si">📅</div><div class="sv">—</div><div class="sl">Days</div></div>
+        <div class="stat-card ph"><div class="si">🎯</div><div class="sv">—</div><div class="sl">Fit Score</div></div>
+      </div>
+
+      <!-- AI ROW -->
+      <div class="ai-row">
+        <div class="ai-box">
+          <div class="ai-box-lbl">AI Fit Score</div>
+          <div class="fit-num" id="fitNum">—</div>
+          <div class="fit-bar"><div class="fit-fill" id="fitFill" style="width:0"></div></div>
+          <div class="fit-sub" id="fitSub">Generate a plan to see score</div>
+        </div>
+        <div class="ai-box reasons-box">
+          <div class="ai-box-lbl">Why this plan works</div>
+          <ul class="reasons-list" id="reasonsList"><li>AI reasoning will appear after generating</li></ul>
+        </div>
+        <div class="ai-box refine-box">
+          <div class="ai-box-lbl">✦ Refine with AI</div>
+          <textarea class="fi sm" id="refineInput" rows="2" placeholder="e.g. cheaper, more museums, avoid crowds…"></textarea>
+          <button class="btn-primary sm" id="refineBtn" type="button">Ask AI</button>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tab-bar" role="tablist">
+        <button class="tab active" data-tab="itinerary" role="tab" aria-selected="true">📅 Itinerary</button>
+        <button class="tab" data-tab="budget" role="tab" aria-selected="false">💰 Budget</button>
+        <button class="tab" data-tab="map" role="tab" aria-selected="false">🗺 Live Map</button>
+        <button class="tab" data-tab="stops" role="tab" aria-selected="false">📍 Stops</button>
+        <button class="tab" data-tab="safety" role="tab" aria-selected="false">🛡 Safety</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-itinerary">
+        <div class="empty-state">
+          <div class="es-icon">⚡</div>
+          <div class="es-title">Groq AI is ready</div>
+          <p>Fill in your preferences and click <strong>Generate AI Plan</strong>.<br>Llama 3 will craft a full personalised itinerary in seconds.</p>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-budget"></div>
+      <div class="tab-panel" id="tab-map">
+        <div class="empty-state"><div class="es-icon">🗺</div><div class="es-title">Live Map</div><p>Generate a plan to see your stops on an interactive map.</p></div>
+      </div>
+      <div class="tab-panel" id="tab-stops"></div>
+      <div class="tab-panel" id="tab-safety"></div>
+
+      <!-- MOBILE BOTTOM BAR -->
+      <div class="mobile-bottom-bar" id="mobileBottomBar">
+        <button class="mb-btn" id="mobileShareBtn">🔗 Share</button>
+        <button class="mb-btn" id="mobilePrintBtn">🖨 Print</button>
+        <button class="mb-btn primary" id="mobileGenerateBtn">⚡ Generate</button>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer" id="contact">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <span class="brand-star footer-star">✦</span>
+        <div>
+          <strong>TripWise</strong>
+          <span>AI-powered travel planning workspace for Indian students.</span>
+        </div>
+      </div>
+      <nav class="footer-col" aria-label="Product links">
+        <h4>Product</h4>
+        <a href="#workspace">Planner</a>
+        <a href="#features">AI tools</a>
+        <a href="#saved-plans" id="footerSavedPlansNav">Saved plans</a>
+      </nav>
+      <nav class="footer-col" aria-label="Support links">
+        <h4>Support</h4>
+        <a href="#tab-safety" id="footerSafetyNav">Safety guide</a>
+        <a href="mailto:hello@tripwise.app">Contact support</a>
+        <a href="https://groq.com" target="_blank" rel="noopener">Groq platform</a>
+      </nav>
+      <div class="footer-col">
+        <h4>Assurance</h4>
+        <span>Browser-local saved plans</span>
+        <span>Export-ready PDF and calendar files</span>
+        <span>Verify routes, prices, and safety before travel</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; <span id="copyrightYear"></span> TripWise. All rights reserved.</span>
+      <span>Privacy-first beta: your saved plans stay in this browser unless you share or export them.</span>
+    </div>
+  </footer>
+</div><!-- appShell -->
+
+<!-- ═══════════ AI LOADING OVERLAY ═══════════ -->
+<div class="ai-overlay hidden" id="aiOverlay">
+  <div class="overlay-card">
+    <div class="overlay-spinner"><div class="spinner-ring"></div><div class="spinner-bolt"><svg class="spinner-bolt-svg" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor"/></svg></div></div>
+    <div class="overlay-title">Llama 3 is planning your trip</div>
+    <div class="overlay-step" id="overlayStep">Reading your preferences…</div>
+    <div class="overlay-bar"><div class="overlay-fill" id="overlayFill" style="width:0%"></div></div>
+    <div class="overlay-model">groq · llama-3.3-70b-versatile</div>
+  </div>
+</div>
+
+<!-- ═══════════ CHAT WIDGET ═══════════ -->
+<div class="chat-widget">
+  <button class="chat-fab" id="chatFab" aria-expanded="false" aria-label="Open AI chat">
+    <span class="fab-icon">💬</span><span class="fab-close">✕</span>
+  </button>
+  <div class="chat-box" id="chatBox">
+    <div class="chat-hd">
+      <div><div class="chat-hd-title">TripWise AI</div><div class="chat-hd-sub"><span class="live-dot"></span>Llama 3 · Groq</div></div>
+      <div class="chat-badge">AI</div>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-quick">
+      <button data-q="How can I reduce the cost of this trip? Be specific.">💰 Save money</button>
+      <button data-q="Give me 5 safety tips for students visiting this city.">🛡 Safety</button>
+      <button data-q="Explain my budget breakdown in detail.">📊 Budget</button>
+      <button data-q="What hidden gems should I visit?">💎 Hidden gems</button>
+      <button data-q="What local food must I try and where?">🍜 Food guide</button>
+    </div>
+    <form class="chat-form" id="chatForm">
+      <input class="chat-input" id="chatInput" placeholder="Ask Llama 3 about your trip…" autocomplete="off">
+      <button class="chat-send" type="submit"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg></button>
+    </form>
+    <div class="chat-watermark">Powered by Llama 3 · Groq Cloud</div>
+  </div>
+</div>
+
+<!-- ═══════════ MODALS ═══════════ -->
+
+<!-- Summary Modal -->
+<div class="modal-overlay hidden" id="summaryModal">
+  <div class="modal-card wide">
+    <div class="modal-hd"><h3>📝 AI Trip Summary</h3><button class="modal-close" onclick="hideModal('summaryModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="summary-text" id="summaryText"></div>
+      <div class="modal-actions">
+        <button class="btn-primary sm" id="summaryWaBtn">💬 Share on WhatsApp</button>
+        <button class="btn-ghost sm" id="summaryCopyBtn">📋 Copy Text</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Budget Negotiator Modal -->
+<div class="modal-overlay hidden" id="negotiatorModal">
+  <div class="modal-card wide">
+    <div class="modal-hd"><h3 id="negotiatorTitle">💸 Budget AI Advisor</h3><button class="modal-close" onclick="hideModal('negotiatorModal')">✕</button></div>
+    <div class="modal-body"><div class="negotiator-text" id="negotiatorText"></div></div>
+  </div>
+</div>
+
+<!-- Comparison Modal -->
+<div class="modal-overlay hidden" id="comparisonModal">
+  <div class="modal-card full">
+    <div class="modal-hd"><h3>⚖ Trip Comparison — 3 Variants</h3><button class="modal-close" onclick="hideModal('comparisonModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="comparison-loading hidden" id="comparisonLoading">
+        <div class="spinner-ring sm"></div><p>Generating 3 plan variants with AI…</p>
+      </div>
+      <div class="comparison-grid" id="comparisonGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Saved Plans Modal -->
+<div class="modal-overlay hidden" id="savedPlansModal">
+  <div class="modal-card wide">
+    <div class="modal-hd"><h3>📂 Saved Plans</h3><button class="modal-close" onclick="hideModal('savedPlansModal')">✕</button></div>
+    <div class="modal-body"><div class="saved-plans-grid" id="savedPlansGrid"></div></div>
+  </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal-overlay hidden" id="qrModal">
+  <div class="modal-card narrow">
+    <div class="modal-hd"><h3>⬛ QR Code</h3><button class="modal-close" onclick="hideModal('qrModal')">✕</button></div>
+    <div class="modal-body centered">
+      <div id="qrContainer" class="qr-container"></div>
+      <pre class="qr-fallback hidden" id="qrFallbackText"></pre>
+      <p class="qr-hint">Scan to share trip details</p>
+      <div class="qr-actions">
+        <button class="btn-ghost sm" id="qrCopyBtn">📋 Copy Text</button>
+        <button class="btn-ghost sm" id="qrDownloadBtn">⬇ Download PNG</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Replan Day Modal -->
+<div class="modal-overlay hidden" id="replanModal">
+  <div class="modal-card narrow">
+    <div class="modal-hd"><h3>🔄 Replan a Day</h3><button class="modal-close" onclick="hideModal('replanModal')">✕</button></div>
+    <div class="modal-body">
+      <label class="fl" style="margin-bottom:6px;display:block">Which day?</label>
+      <select class="fi" id="replanDaySelect" style="margin-bottom:12px"></select>
+      <label class="fl" style="margin-bottom:6px;display:block">What happened / what to change?</label>
+      <textarea class="fi" id="replanReason" rows="3" placeholder="e.g. Day 2 got rained out, replace outdoor spots with indoor museums. Or: make Day 1 cheaper."></textarea>
+      <button class="btn-primary full" id="replanSubmitBtn" style="margin-top:12px">🔄 Replan with AI</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT AREA -->
+<div class="print-area" id="printArea"></div>
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+<!-- BACK TO TOP -->
+<button class="back-to-top" id="backToTop" title="Back to top" aria-label="Scroll back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

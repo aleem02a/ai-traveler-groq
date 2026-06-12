@@ -1,0 +1,25 @@
+{
+  "name": "TripWise - AI Student Travel Planner",
+  "short_name": "TripWise",
+  "description": "AI-powered student travel planning for India. Smart routes, tight budgets, zero guesswork.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#c9a84c",
+  "background_color": "#0a0f1e",
+  "orientation": "any",
+  "categories": ["travel", "education", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230a0f1e'/%3E%3Cpath d='M304 64 112 288h128l-32 160 192-240H272z' fill='%23c9a84c'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='36' fill='%230a0f1e'/%3E%3Cpath d='M114 24 42 108h48l-12 60 72-90h-48z' fill='%23c9a84c'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

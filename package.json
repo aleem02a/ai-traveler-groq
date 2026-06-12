@@ -1,0 +1,17 @@
+{
+  "name": "tripwise",
+  "version": "1.0.0",
+  "description": "TripWise — AI-Powered Student Travel Planner for India",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["travel", "ai", "groq", "india", "student"],
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
