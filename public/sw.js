@@ -3,7 +3,7 @@
    Caches core assets for offline resilience
    ═══════════════════════════════════════════ */
 
-const CACHE_NAME = "tripwise-v5";
+const CACHE_NAME = "tripwise-v6";
 const CORE_ASSETS = [
   "./",
   "./index.html",
