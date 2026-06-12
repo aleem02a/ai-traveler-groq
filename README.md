@@ -1,6 +1,21 @@
 # AI Traveler Groq 🚀✈️
 
-An intelligent travel companion powered by **Groq's high-speed AI inference** and modern web technologies. This application leverages cutting-edge AI models to provide real-time travel recommendations, itinerary planning, and personalized travel insights.
+An intelligent travel companion powered by **Groq's high-speed AI inference** and modern web technologies. This application leverages cutting-edge AI models to provide real-time travel recommendations, itinerary planning, and personalized travel insights instantly.
+
+🌐 **Live Application:** [https://ai-traveler-groq.onrender.com](https://ai-traveler-groq.onrender.com)
+
+## 📖 Project Description
+
+**AI Traveler Groq** is a sophisticated travel planning application that combines artificial intelligence with modern web technologies to revolutionize how users plan their trips. Built with Next.js and powered by Groq's ultra-fast LLM inference engine, this application delivers instantaneous travel recommendations tailored to individual preferences, budgets, and interests.
+
+The platform eliminates the tedious research phase of trip planning by leveraging advanced AI models to analyze destinations, suggest optimal itineraries, identify local attractions, and provide budget-friendly recommendations. Whether you're planning a weekend getaway or an extended international journey, AI Traveler Groq serves as your personal travel consultant, available 24/7 with lightning-fast response times.
+
+### Key Capabilities:
+- **Personalized Travel Intelligence**: Receive AI-driven recommendations based on your unique travel style and preferences
+- **Rapid Itinerary Generation**: Create comprehensive travel plans in seconds, not hours
+- **Real-Time Insights**: Access up-to-date information about destinations, attractions, and travel logistics
+- **Budget-Conscious Planning**: Get recommendations that align with your financial constraints
+- **Multi-Destination Planning**: Seamlessly coordinate trips across multiple cities and countries
 
 ## 🌟 Features
 
