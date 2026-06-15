@@ -20,12 +20,17 @@ const THEME_STORE    = "tripwise_theme";
 const PLANS_STORE    = "tripwise_saved_plans";
 const MAX_CHAT_TURNS = 16;
 const MAX_SAVED      = 10;
+const PLAN_MAX_TOKENS = 3600;
+const STREAM_MAX_TOKENS = 700;
+const DEFAULT_RETRY_AFTER_MS = 30000;
 
 /* ─── State ─── */
 const S = {
   plan:        null,
   chatHistory: [],
   generating:  false,
+  chatStreaming: false,
+  rateLimitedUntil: 0,
   toastTimer:  null,
   voiceActive: false,
   voiceRecognizer: null
@@ -161,6 +166,65 @@ function toast(msg, dur = 3200) {
   S.toastTimer = setTimeout(() => el.classList.remove("show"), dur);
 }
 
+function formatWait(ms) {
+  const seconds = Math.max(1, Math.ceil((ms || 0) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+}
+
+function parseRetryAfter(value) {
+  if (!value) return 0;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const dateMs = Date.parse(value);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : 0;
+}
+
+function rememberRateLimit(ms = DEFAULT_RETRY_AFTER_MS) {
+  S.rateLimitedUntil = Math.max(S.rateLimitedUntil || 0, Date.now() + ms);
+}
+
+function getRateLimitWait() {
+  return Math.max(0, (S.rateLimitedUntil || 0) - Date.now());
+}
+
+function makeCooldownError() {
+  const retryAfterMs = getRateLimitWait();
+  const err = new Error(`Groq rate limit reached. Please retry in ${formatWait(retryAfterMs)}.`);
+  err.status = 429;
+  err.retryAfterMs = retryAfterMs;
+  return err;
+}
+
+function ensureAIReady() {
+  if (getRateLimitWait() > 0) throw makeCooldownError();
+}
+
+function userFriendlyAIError(err) {
+  const msg = err?.message || "AI unavailable";
+  if (err?.status === 429 || /429|rate.?limit/i.test(msg)) {
+    const retryAfterMs = err?.retryAfterMs || getRateLimitWait() || DEFAULT_RETRY_AFTER_MS;
+    rememberRateLimit(retryAfterMs);
+    return `Groq rate limit reached. Try again in ${formatWait(retryAfterMs)}.`;
+  }
+  return msg;
+}
+
+async function readAPIError(res) {
+  const payload = await res.json().catch(() => ({}));
+  const retryAfterMs = parseRetryAfter(res.headers.get("Retry-After")) ||
+    Number(payload?.error?.retryAfterMs || 0) ||
+    (res.status === 429 ? DEFAULT_RETRY_AFTER_MS : 0);
+
+  const err = new Error(payload?.error?.message || `HTTP ${res.status}`);
+  err.status = res.status;
+  err.retryAfterMs = retryAfterMs;
+  if (res.status === 429) rememberRateLimit(retryAfterMs);
+  return err;
+}
+
 function showScreen(id) {
   $$(".screen").forEach(s => s.classList.remove("active"));
   $(id).classList.add("active");
@@ -200,6 +264,8 @@ function loadScript(url) {
    =================================================== */
 
 async function groqChat(messages, { model = CHAT_MODEL, jsonMode = false, temperature = 0.7, maxTokens = 4096 } = {}) {
+  ensureAIReady();
+
   const body = {
     model,
     messages,
@@ -215,8 +281,7 @@ async function groqChat(messages, { model = CHAT_MODEL, jsonMode = false, temper
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    throw await readAPIError(res);
   }
   const data = await res.json();
   return data.choices?.[0]?.message?.content || "";
@@ -224,15 +289,17 @@ async function groqChat(messages, { model = CHAT_MODEL, jsonMode = false, temper
 
 /* Streaming chat */
 async function groqStream(messages, onChunk) {
+  ensureAIReady();
+
   const body = {
-    model: CHAT_MODEL, messages, temperature: 0.75, max_tokens: 1024
+    model: CHAT_MODEL, messages, temperature: 0.75, max_tokens: STREAM_MAX_TOKENS
   };
   const res = await fetch(API_STREAM_URL, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(body)
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) throw await readAPIError(res);
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -664,6 +731,7 @@ Students: ${p.travelers} | Budget: ₹${p.budget} total | Start: ${p.startDate}
 Transport: ${p.transport} | Stay: ${p.stay} | Meals: ${p.meal}
 Interests: ${p.interests.join(", ")} | Pace: ${p.pace}
 ${p.extra ? "Special: " + p.extra : ""}
+Keep the response compact enough for low API rate limits: 3-4 activities per day, descriptions under 22 words, and no more than 14 mapStops.
 
 Return ONLY this JSON structure (no extra text):
 {
@@ -768,6 +836,10 @@ function hideLoading() {
 
 async function generatePlan() {
   if (S.generating) return;
+  if (getRateLimitWait() > 0) {
+    toast(userFriendlyAIError(makeCooldownError()), 5200);
+    return;
+  }
 
   const interests = [...$$("input[name='int']:checked")].map(c => c.value);
   const pace      = (document.querySelector("input[name='pace']:checked") || {}).value || "balanced";
@@ -798,7 +870,7 @@ async function generatePlan() {
         { role: "system", content: "You are TripWise, an expert Indian student travel planner. Always return valid JSON only." },
         { role: "user",   content: buildPrompt(params) }
       ],
-      { model: PLAN_MODEL, jsonMode: true, temperature: 0.65, maxTokens: 8000 }
+      { model: PLAN_MODEL, jsonMode: true, temperature: 0.65, maxTokens: PLAN_MAX_TOKENS }
     );
 
     const plan   = extractJSON(raw);
@@ -837,9 +909,9 @@ function showSkeletonState() {
 }
 
 function handleAPIError(err) {
-  const msg = err.message || "Unknown error";
-  if (/429|rate.?limit/i.test(msg)) {
-    toast("⏳ Rate limit — wait a moment and retry");
+  const msg = userFriendlyAIError(err);
+  if (err?.status === 429 || /rate.?limit/i.test(msg)) {
+    toast(msg, 6200);
   } else {
     toast("❌ AI error: " + msg.slice(0, 70));
   }
@@ -1283,6 +1355,7 @@ function activateTab(name) {
 /* ─── Trip Summarizer ─── */
 async function generateTripSummary() {
   if (!S.plan) { toast("Generate a plan first!"); return; }
+  if (getRateLimitWait() > 0) { toast(userFriendlyAIError(makeCooldownError()), 5200); return; }
   const btn = D.summaryBtn;
   btn.disabled = true; btn.textContent = "📝 Summarizing…";
 
@@ -1318,13 +1391,14 @@ Make it exciting, under 250 words, use *bold* for key info, include day highligh
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     };
 
-  } catch (e) { toast("❌ " + (e.message||"Summary failed")); }
+  } catch (e) { toast("❌ " + userFriendlyAIError(e)); }
   finally { btn.disabled = false; btn.textContent = "📝 Summarize"; }
 }
 
 /* ─── Budget Negotiator ─── */
 async function runBudgetNegotiator() {
   if (!S.plan) { toast("Generate a plan first!"); return; }
+  if (getRateLimitWait() > 0) { toast(userFriendlyAIError(makeCooldownError()), 5200); return; }
   const btn = D.negotiateBtn;
   btn.disabled = true; btn.textContent = "💸 Analyzing…";
 
@@ -1356,13 +1430,14 @@ Use bullet points. Be specific with real alternatives and amounts.`
     $("negotiatorText").textContent  = text;
     showModal("negotiatorModal");
 
-  } catch (e) { toast("❌ " + (e.message||"Analysis failed")); }
+  } catch (e) { toast("❌ " + userFriendlyAIError(e)); }
   finally { btn.disabled = false; btn.textContent = "💸 Budget AI"; }
 }
 
 /* ─── Trip Comparison ─── */
 async function generateComparison() {
   if (!S.plan) { toast("Generate a plan first!"); return; }
+  if (getRateLimitWait() > 0) { toast(userFriendlyAIError(makeCooldownError()), 5200); return; }
   const btn = D.compareBtn;
   btn.disabled = true; btn.textContent = "⚖ Comparing…";
 
@@ -1372,29 +1447,37 @@ async function generateComparison() {
 
   const p = S.plan._params || {};
 
-  const buildComparePrompt = (mode) => {
-    const budgetMult  = mode === "budget"  ? 0.65 : mode === "comfort" ? 1.4 : 1.0;
-    const adj         = Math.round(p.budget * budgetMult);
-    const stayMap     = { budget:"student dormitory/shared hostel", balanced:p.stay, comfort:"budget hotel with private room" };
-    const mealMap     = { budget:"street food stalls only", balanced:p.meal, comfort:"mix of cafes and casual restaurants" };
-    return `Generate a ${mode} trip summary for ${p.city}, ${p.days} days, ${p.travelers} students, budget ₹${adj}.
-Stay: ${stayMap[mode]}. Meals: ${mealMap[mode]}.
+  const compareModes = [
+    { mode:"budget", label:"💰 Budget",  cls:"g", card:"budget-card",   budget:Math.round(p.budget * 0.65), stay:"student dormitory/shared hostel", meal:"street food stalls only" },
+    { mode:"balanced", label:"⚖ Balanced", cls:"p", card:"balanced-card", budget:p.budget, stay:p.stay, meal:p.meal },
+    { mode:"comfort", label:"✨ Comfort",  cls:"a", card:"comfort-card",  budget:Math.round(p.budget * 1.4), stay:"budget hotel with private room", meal:"mix of cafes and casual restaurants" }
+  ];
+
+  const buildComparePrompt = () => `Generate three compact trip variants for ${p.city}, India.
+Duration: ${p.days} days | Students: ${p.travelers} | Base transport: ${p.transport}
+Variants:
+${compareModes.map(m => `- ${m.mode}: budget ₹${m.budget}, stay ${m.stay}, meals ${m.meal}`).join("\n")}
 Return ONLY JSON:
-{"tripTitle":"string","fitScore":85,"budget":{"groupTotal":0,"perPerson":0},"topStops":["a","b","c","d"],"highlights":["x","y","z"],"accommodation":"string","transport":"string"}`;
-  };
+{"variants":[{"mode":"budget","tripTitle":"string","fitScore":85,"budget":{"groupTotal":0,"perPerson":0},"topStops":["a","b","c","d"],"highlights":["x","y"],"accommodation":"string","transport":"string"}]}`;
 
   try {
-    const [budRaw, balRaw, comRaw] = await Promise.all([
-      groqChat([{ role:"system",content:"Return valid JSON only."},{role:"user",content:buildComparePrompt("budget")}], { model: CHAT_MODEL, jsonMode:true, temperature:0.6, maxTokens:600 }),
-      groqChat([{ role:"system",content:"Return valid JSON only."},{role:"user",content:buildComparePrompt("balanced")}], { model: CHAT_MODEL, jsonMode:true, temperature:0.6, maxTokens:600 }),
-      groqChat([{ role:"system",content:"Return valid JSON only."},{role:"user",content:buildComparePrompt("comfort")}], { model: CHAT_MODEL, jsonMode:true, temperature:0.6, maxTokens:600 })
-    ]);
+    const raw = await groqChat(
+      [{ role:"system",content:"Return valid JSON only."},{role:"user",content:buildComparePrompt()}],
+      { model: CHAT_MODEL, jsonMode:true, temperature:0.6, maxTokens:1600 }
+    );
 
-    const variants = [
-      { label:"💰 Budget",  cls:"g", card:"budget-card",   data: extractJSON(budRaw) },
-      { label:"⚖ Balanced", cls:"p", card:"balanced-card", data: extractJSON(balRaw) },
-      { label:"✨ Comfort",  cls:"a", card:"comfort-card",  data: extractJSON(comRaw) }
-    ];
+    const parsed = extractJSON(raw);
+    const variantList = Array.isArray(parsed.variants) ? parsed.variants : [parsed.budget, parsed.balanced, parsed.comfort].filter(Boolean);
+    const byMode = new Map(variantList.map(v => [String(v?.mode || "").toLowerCase(), v]));
+    const fallbackList = [...variantList];
+    const variants = compareModes.map(m => ({
+      label: m.label,
+      cls: m.cls,
+      card: m.card,
+      data: byMode.get(m.mode) || fallbackList.shift()
+    }));
+
+    if (variants.some(v => !v.data)) throw new Error("AI did not return all comparison variants");
 
     $("comparisonGrid").innerHTML = variants.map((v, vi) => {
       const d = v.data;
@@ -1412,11 +1495,11 @@ Return ONLY JSON:
 
     // Store variants for loading
     window._compVariants = variants.map((v,i) => ({
-      ...v.data, _params:{ ...p, budget: [Math.round(p.budget*0.65), p.budget, Math.round(p.budget*1.4)][i] }
+      ...v.data, _params:{ ...p, budget: compareModes[i].budget }
     }));
 
   } catch (e) {
-    toast("❌ Comparison failed: " + (e.message||"Try again"));
+    toast("❌ Comparison failed: " + userFriendlyAIError(e));
     $("comparisonGrid").innerHTML = `<div style="padding:24px;color:var(--red);text-align:center">Failed to generate comparison. Please try again.</div>`;
   } finally {
     $("comparisonLoading").classList.add("hidden");
@@ -1452,6 +1535,7 @@ async function replanDay() {
   const dayNum = parseInt(D.replanDaySelect.value, 10);
   const reason = D.replanReason.value.trim();
   if (!reason) { toast("Please describe what to change"); D.replanReason.focus(); return; }
+  if (getRateLimitWait() > 0) { toast(userFriendlyAIError(makeCooldownError()), 5200); return; }
 
   const btn = D.replanSubmitBtn;
   btn.disabled = true; btn.textContent = "🔄 Replanning…";
@@ -1491,7 +1575,7 @@ Return ONLY the updated day JSON object with same structure (dayNumber, date, th
       leafletMapInstance = null; // refresh map next time
     }
   } catch (e) {
-    toast("❌ Replan failed: " + (e.message||"Try again"));
+    toast("❌ Replan failed: " + userFriendlyAIError(e));
   } finally {
     btn.disabled = false;
     btn.textContent = "🔄 Replan with AI";
@@ -1859,6 +1943,13 @@ function addBubble(text, role) {
 
 async function sendChat(userText) {
   if (!userText.trim()) return;
+  if (S.chatStreaming) { toast("AI chat is still replying. Please wait."); return; }
+  if (getRateLimitWait() > 0) {
+    const msg = userFriendlyAIError(makeCooldownError());
+    addBubble(msg, "err");
+    toast(msg, 5200);
+    return;
+  }
 
   addBubble(userText, "user");
   S.chatHistory.push({ role:"user", content:userText });
@@ -1875,6 +1966,7 @@ async function sendChat(userText) {
   ];
 
   try {
+    S.chatStreaming = true;
     let full = "";
     await groqStream(messages, chunk => {
       full += chunk;
@@ -1898,7 +1990,9 @@ async function sendChat(userText) {
     botEl.appendChild(copyBtn);
   } catch (e) {
     botEl.className = "chat-msg err";
-    botEl.textContent = "❌ " + (e.message||"AI unavailable");
+    botEl.textContent = "❌ " + userFriendlyAIError(e);
+  } finally {
+    S.chatStreaming = false;
   }
 }
 
