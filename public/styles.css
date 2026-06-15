@@ -190,7 +190,7 @@ code { background: var(--s2); border-radius: 4px; font-family: 'Courier New', mo
 #introScreen { align-items: center; flex-direction: column; justify-content: center; overflow: hidden; position: relative }
 .intro-inner {
   align-items: center; animation: fadeUp .7s cubic-bezier(.25,.1,.25,1) both; display: flex; flex-direction: column;
-  gap: 26px; max-width: 580px; padding: 60px 24px 40px; position: relative; text-align: center; z-index: 2;
+  gap: 26px; max-width: 580px; padding: 40px 24px; position: relative; text-align: center; z-index: 2;
 }
 .ai-badge {
   align-items: center; background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.25);
@@ -1054,7 +1054,7 @@ select.fi {
   .stat-grid { grid-template-columns: repeat(4,1fr) }
 }
 
-/* ─── RESPONSIVE — TABLET ─── */
+/* ─── RESPONSIVE — LARGE TABLET / SMALL DESKTOP ─── */
 @media(max-width:1180px) {
   .topbar-status,
   .powered-badge { display: none }
@@ -1073,11 +1073,15 @@ select.fi {
   .comparison-grid { grid-template-columns: 1fr 1fr }
 }
 
+/* ─── RESPONSIVE — TABLET ─── */
 @media(max-width:920px) {
   .topbar-nav { display: none }
   .footer-main { grid-template-columns: 1fr 1fr }
   .footer-brand { grid-column: 1/-1 }
   .footer-bottom { justify-content: flex-start }
+  .intro-logo { font-size: clamp(2.8rem, 12vw, 5rem) }
+  .intro-tagline { font-size: clamp(0.88rem, 2.2vw, 1rem) }
+  .intro-chips span { font-size: .7rem; padding: 4px 12px }
 }
 
 /* ─── RESPONSIVE — MOBILE ─── */
@@ -1092,22 +1096,43 @@ select.fi {
   .brand-name { font-size: 1.1rem }
   .brand-kicker { display: none }
   .brand-tag { display: none }
+
+  /* Intro screen centering on mobile */
+  #introScreen { min-height: 100dvh; padding: 16px }
+  .intro-inner { padding: 24px 16px; gap: 20px; max-width: 100% }
+  .intro-logo { font-size: clamp(2.4rem, 13vw, 3.8rem); letter-spacing: -2px }
+  .intro-tagline { font-size: clamp(0.85rem, 3.5vw, 0.95rem); line-height: 1.7 }
+  .cta-btn { padding: 14px 32px; font-size: .88rem; width: 100%; justify-content: center }
+  .intro-chips { gap: 6px }
+  .intro-chips span { font-size: .68rem; padding: 4px 11px }
+  .ai-badge { font-size: .6rem; padding: 5px 14px; letter-spacing: 1px }
+  .theme-fab { top: 14px; right: 14px; width: 40px; height: 40px; font-size: 1rem }
+
+  /* Form panel as mobile drawer */
   .form-panel {
     background: var(--bg2); border-bottom: none; border-right: none; bottom: 0;
-    box-shadow: 4px 0 32px rgba(0,0,0,.4); left: -100%; max-height: 100vh; overflow-y: auto;
+    box-shadow: 4px 0 32px rgba(0,0,0,.4); left: -100%; max-height: 100dvh; overflow-y: auto;
     position: fixed; top: 0; transition: left .3s cubic-bezier(.25,.1,.25,1);
     width: min(320px, 88vw); z-index: 95; padding: 60px 16px 36px; flex-direction: column;
   }
   .form-panel.open { left: 0 }
   #planForm { grid-template-columns: 1fr; gap: 14px }
-  .field-row { display: grid; grid-template-columns: 1fr; gap: 12px }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
   #planForm>.field:has(.chip-row) { grid-column: auto }
   #planForm>.field:has(.seg) { grid-column: auto }
   #planForm>.field:has(#fExtra) { grid-column: auto }
   .form-btns { grid-column: auto; margin-top: 4px }
   .nlp-bar { flex-direction: column; gap: 8px; padding: 12px }
   .nlp-bar .btn-primary.full { width: 100% }
-  .voice-btn { height: 100%; min-height: 52px; width: 44px }
+  .voice-btn { height: 100%; min-height: 48px; width: 44px }
+
+  /* Touch-friendly inputs */
+  .fi { font-size: 16px; padding: 11px 12px; height: 44px }
+  select.fi { height: 44px }
+  textarea.fi { height: auto; min-height: 64px }
+  .fi.sm { font-size: 15px; padding: 9px 10px }
+
+  /* Results panel */
   .results-panel { padding: 14px 12px 120px; gap: 14px }
   .stat-grid { grid-template-columns: repeat(2,1fr) }
   .ai-row { grid-template-columns: 1fr }
@@ -1116,35 +1141,14 @@ select.fi {
   .budget-grid { grid-template-columns: repeat(2,1fr) }
   .stops-grid { grid-template-columns: 1fr }
   .safety-grid { grid-template-columns: 1fr }
+
+  /* Chat widget */
   .chat-widget { bottom: 90px; right: 12px }
-  .chat-box { bottom: 62px; width: calc(100vw - 24px) }
-  .toast { bottom: 120px }
+  .chat-box { bottom: 62px; width: calc(100vw - 24px); height: min(440px, calc(100dvh - 170px)); max-height: calc(100dvh - 170px) }
+  .toast { bottom: 120px; max-width: calc(100vw - 24px); text-align: center; white-space: normal }
+
+  /* Tabs */
   .tab { font-size: .72rem; padding: 0 4px; height: 34px; gap: 2px }
-  .comparison-grid { grid-template-columns: 1fr }
-  .modal-card.full { max-width: 100%; border-radius: 14px }
-  #mapContainer { height: 280px }
-  .chip-row { gap: 5px }
-  .chip span { padding: 5px 10px; font-size: .74rem; height: 28px }
-  .seg-opt span { padding: 0 4px; font-size: .74rem; height: 32px }
-  .aia-btn { padding: 0 10px; font-size: .72rem; height: 30px }
-  .ai-actions-bar { padding: 5px; gap: 4px }
-  .form-panel-hd { padding-top: 0 }
-  .stat-card { min-height: 72px; padding: 12px 14px }
-  .site-footer { padding: 20px 16px 110px }
-  .footer-main { grid-template-columns: 1fr; gap: 16px }
-  .footer-brand { grid-column: auto }
-  .footer-bottom { gap: 6px; margin-top: 18px }
-  .footer-col { gap: 6px }
-  .qr-container { min-height: 226px; min-width: 226px }
-  .qr-actions { width: 100% }
-  .qr-actions .btn-ghost { flex: 1; justify-content: center }
-  .back-to-top { bottom: 100px; left: 12px; width: 38px; height: 38px }
-  .topbar-left { flex: 1 1 auto }
-  .topbar-right { flex: 0 0 auto; gap: 6px }
-  .tb-btn { padding: 0 10px }
-  .theme-toggle-btn { height: 36px; width: 36px; padding: 0 }
-  .results-hd { align-items: flex-start }
-  .ai-pill { max-width: 100%; white-space: normal }
   .tab-bar {
     overflow-x: auto;
     scrollbar-width: none;
@@ -1156,49 +1160,64 @@ select.fi {
     min-width: 104px;
     padding: 0 10px;
   }
-  .act-row {
-    gap: 8px;
-    grid-template-columns: 48px minmax(0, 1fr);
-    padding: 12px;
-  }
-  .act-cost {
-    grid-column: 2;
-    padding-top: 0;
-  }
-  .day-hd-actions {
-    justify-content: flex-start;
-    width: 100%;
-  }
-  .budget-grid { grid-template-columns: 1fr }
-  .modal-overlay {
-    align-items: flex-end;
-    padding: 10px;
-  }
-  .modal-card {
-    border-radius: 14px;
-    max-height: calc(100dvh - 20px);
-  }
-  .modal-actions {
-    flex-wrap: wrap;
-  }
+
+  /* Comparison & Modals */
+  .comparison-grid { grid-template-columns: 1fr }
+  .modal-card.full { max-width: 100%; border-radius: 14px }
+  .modal-overlay { align-items: flex-end; padding: 10px }
+  .modal-card { border-radius: 14px; max-height: calc(100dvh - 20px) }
+  .modal-actions { flex-wrap: wrap }
   .modal-actions .btn-primary,
-  .modal-actions .btn-ghost {
-    flex: 1 1 160px;
-    justify-content: center;
-  }
-  .chat-box {
-    height: min(440px, calc(100dvh - 170px));
-    max-height: calc(100dvh - 170px);
-  }
-  .toast {
-    max-width: calc(100vw - 24px);
-    text-align: center;
-    white-space: normal;
-  }
+  .modal-actions .btn-ghost { flex: 1 1 160px; justify-content: center }
+
+  /* Map */
+  #mapContainer { height: 280px }
+
+  /* Chips & Segments */
+  .chip-row { gap: 5px }
+  .chip span { padding: 5px 10px; font-size: .74rem; height: 28px }
+  .seg-opt span { padding: 0 4px; font-size: .74rem; height: 32px }
+
+  /* Action bar */
+  .aia-btn { padding: 0 10px; font-size: .72rem; height: 30px }
+  .ai-actions-bar { padding: 5px; gap: 4px }
+  .form-panel-hd { padding-top: 0 }
+
+  /* Stats & Cards */
+  .stat-card { min-height: 72px; padding: 12px 14px }
+  .act-row { gap: 8px; grid-template-columns: 48px minmax(0, 1fr); padding: 12px }
+  .act-cost { grid-column: 2; padding-top: 0 }
+  .day-hd-actions { justify-content: flex-start; width: 100% }
+  .budget-grid { grid-template-columns: 1fr }
+
+  /* Footer */
+  .site-footer { padding: 20px 16px 110px }
+  .footer-main { grid-template-columns: 1fr; gap: 16px }
+  .footer-brand { grid-column: auto }
+  .footer-bottom { gap: 6px; margin-top: 18px }
+  .footer-col { gap: 6px }
+
+  /* QR */
+  .qr-container { min-height: 226px; min-width: 226px }
+  .qr-actions { width: 100% }
+  .qr-actions .btn-ghost { flex: 1; justify-content: center }
+
+  /* Misc */
+  .back-to-top { bottom: 100px; left: 12px; width: 38px; height: 38px }
+  .topbar-left { flex: 1 1 auto }
+  .topbar-right { flex: 0 0 auto; gap: 6px }
+  .tb-btn { padding: 0 10px }
+  .theme-toggle-btn { height: 36px; width: 36px; padding: 0 }
+  .results-hd { align-items: flex-start }
+  .ai-pill { max-width: 100%; white-space: normal }
   .powered-badge { display: none }
+
+  /* Loading overlay on mobile */
+  .overlay-card { padding: 36px 24px; max-width: 320px }
+  .overlay-title { font-size: .95rem }
 }
 
-/* Extra-small phones */
+/* ─── RESPONSIVE — SMALL PHONES ─── */
 @media(max-width:420px) {
   .topbar { padding: 9px 10px }
   .brand-name { font-size: 1rem }
@@ -1219,6 +1238,23 @@ select.fi {
   .nlp-input-wrap { min-width: 0 }
   .mobile-bottom-bar { padding-left: 10px; padding-right: 10px }
   .mb-btn { min-height: 42px; padding-left: 6px; padding-right: 6px }
+  .intro-inner { padding: 20px 12px; gap: 16px }
+  .intro-logo { font-size: clamp(2rem, 14vw, 3rem) }
+  .cta-btn { padding: 12px 24px; font-size: .84rem }
+  .field-row { grid-template-columns: 1fr; gap: 10px }
+  .form-panel { width: min(290px, 92vw); padding: 48px 12px 32px }
+}
+
+/* ─── RESPONSIVE — EXTRA-SMALL PHONES (360px) ─── */
+@media(max-width:360px) {
+  .intro-logo { font-size: 2rem; letter-spacing: -1.5px }
+  .intro-tagline { font-size: .82rem }
+  .ai-badge { font-size: .55rem; padding: 4px 10px }
+  .intro-chips span { font-size: .62rem; padding: 3px 8px }
+  .stat-grid { grid-template-columns: 1fr }
+  .tab { min-width: 90px; font-size: .68rem }
+  .form-panel { width: 100vw }
+  .overlay-card { padding: 28px 16px; max-width: 280px }
 }
 
 /* Print */

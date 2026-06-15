@@ -274,16 +274,43 @@ async function groqChat(messages, { model = CHAT_MODEL, jsonMode = false, temper
     ...(jsonMode ? { response_format: { type: "json_object" } } : {})
   };
 
-  const res = await fetch(API_CHAT_URL, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body)
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90000);
+
+  let res;
+  try {
+    res = await fetch(API_CHAT_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(body),
+      signal:  controller.signal
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeout);
+    if (fetchErr.name === "AbortError") {
+      const err = new Error("AI request timed out. Please try again.");
+      err.status = 408;
+      throw err;
+    }
+    const err = new Error("Network error — check your connection and try again.");
+    err.status = 0;
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     throw await readAPIError(res);
   }
-  const data = await res.json();
+
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    const err = new Error("AI returned an invalid response. Please try again.");
+    err.status = 502;
+    throw err;
+  }
   return data.choices?.[0]?.message?.content || "";
 }
 
@@ -864,34 +891,58 @@ async function generatePlan() {
   showLoading();
   showSkeletonState();
 
-  try {
-    const raw  = await groqChat(
-      [
-        { role: "system", content: "You are TripWise, an expert Indian student travel planner. Always return valid JSON only." },
-        { role: "user",   content: buildPrompt(params) }
-      ],
-      { model: PLAN_MODEL, jsonMode: true, temperature: 0.65, maxTokens: PLAN_MAX_TOKENS }
-    );
+  const MAX_RETRIES = 3;
+  let lastErr = null;
 
-    const plan   = extractJSON(raw);
-    plan._params = params;
-    S.plan       = plan;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 1) {
+        D.overlayStep.textContent = `Retrying… (attempt ${attempt}/${MAX_RETRIES})`;
+      }
 
-    renderAll(plan, params);
-    activateTab("itinerary");
-    toast("⚡ AI plan ready!");
+      const raw  = await groqChat(
+        [
+          { role: "system", content: "You are TripWise, an expert Indian student travel planner. Always return valid JSON only." },
+          { role: "user",   content: buildPrompt(params) }
+        ],
+        { model: PLAN_MODEL, jsonMode: true, temperature: 0.65, maxTokens: PLAN_MAX_TOKENS }
+      );
 
-    // Refresh Leaflet map instance if map tab was open
-    leafletMapInstance = null;
+      const plan   = extractJSON(raw);
+      plan._params = params;
+      S.plan       = plan;
 
-  } catch (err) {
-    console.error("Groq error:", err);
-    handleAPIError(err);
-  } finally {
-    S.generating           = false;
-    D.generateBtn.disabled = false;
-    hideLoading();
+      renderAll(plan, params);
+      activateTab("itinerary");
+      toast("⚡ AI plan ready!");
+
+      // Refresh Leaflet map instance if map tab was open
+      leafletMapInstance = null;
+      lastErr = null;
+      break; // success — exit retry loop
+
+    } catch (err) {
+      console.error(`Groq error (attempt ${attempt}/${MAX_RETRIES}):`, err);
+      lastErr = err;
+
+      // Don't retry rate-limit (429) or auth (401/403) errors
+      if (err?.status === 429 || err?.status === 401 || err?.status === 403) break;
+
+      // Wait before retrying (exponential backoff: 1.5s, 3s, 6s)
+      if (attempt < MAX_RETRIES) {
+        const delayMs = 1500 * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
   }
+
+  if (lastErr) {
+    handleAPIError(lastErr);
+  }
+
+  S.generating           = false;
+  D.generateBtn.disabled = false;
+  hideLoading();
 }
 
 /* ─── #15 Skeleton Loading State ─── */
